@@ -1,0 +1,30 @@
+/home/cheeto/Arduino/cheetoCube/build/libraries/FastLED/fl/hsv16.cpp.o: \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/hsv16.cpp \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/hsv16.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/stdint.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/int.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/platforms/int.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/platforms/arm/is_arm.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/platforms/esp/int.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/crgb.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/chsv.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/hsv.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/namespace.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/color.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/lib8tion/types.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/force_inline.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/type_traits.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/move.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/hsv2rgb.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/ease.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fastled_progmem.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/platforms/null_progmem.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/math.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/has_include.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/clamp.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/map_range.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/math_macros.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/compiler_control.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/geometry.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/lib8tion/intmap.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/lib8tion/lib8static.h

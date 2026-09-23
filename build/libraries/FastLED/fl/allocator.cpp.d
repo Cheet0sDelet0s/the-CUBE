@@ -1,0 +1,32 @@
+/home/cheeto/Arduino/cheetoCube/build/libraries/FastLED/fl/allocator.cpp.o: \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/allocator.cpp \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/allocator.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/inplacenew.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/stdint.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/int.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/platforms/int.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/platforms/arm/is_arm.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/platforms/esp/int.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/memfill.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/type_traits.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/namespace.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/move.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/unused.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/bit_cast.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/bitset.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/bitset_dynamic.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/math_macros.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/has_include.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/compiler_control.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/variant.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/thread_local.h \
+ /home/cheeto/Arduino/libraries/FastLED/src/fl/thread.h \
+ /home/cheeto/.arduino15/packages/esp32/tools/esp32-libs/3.3.7/include/heap/include/esp_heap_caps.h \
+ /home/cheeto/.arduino15/packages/esp32/tools/esp32-libs/3.3.7/include/heap/include/multi_heap.h \
+ /home/cheeto/.arduino15/packages/esp32/tools/esp32-libs/3.3.7/include/esp_common/include/esp_err.h \
+ /home/cheeto/.arduino15/packages/esp32/tools/esp32-libs/3.3.7/include/newlib/platform_include/stdio.h \
+ /home/cheeto/.arduino15/packages/esp32/tools/esp32-libs/3.3.7/include/esp_common/include/esp_compiler.h \
+ /home/cheeto/.arduino15/packages/esp32/tools/esp32-libs/3.3.7/include/esp_common/include/esp_attr.h \
+ /home/cheeto/.arduino15/packages/esp32/tools/esp32-libs/3.3.7/include/esp_system/include/esp_system.h \
+ /home/cheeto/.arduino15/packages/esp32/tools/esp32-libs/3.3.7/include/esp_common/include/esp_bit_defs.h \
+ /home/cheeto/.arduino15/packages/esp32/tools/esp32-libs/3.3.7/include/esp_common/include/esp_idf_version.h
