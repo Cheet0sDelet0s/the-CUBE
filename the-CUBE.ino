@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include <FastLED.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
@@ -74,8 +75,13 @@ int16_t gx = 0;
 int16_t gy = 0;
 int16_t gz = 0;
 
+int prevGX = gx;
+int prevGY = gy;
+int prevGZ = gz;
+
 float batteryVoltage = 3.70;
 int batteryTimer = 0;
+bool onBattery = true;
 
 const uint8_t dockDebounce = 10;
 bool dockOpen = true;
@@ -1914,6 +1920,11 @@ const int sampleWindow = 50;    // Sample window width in milliseconds (50 ms = 
 unsigned int sample;
 double volts;
 
+int idleTimer = 0;
+int timeout = 500;
+int brightnessModifier = brightness;
+int idleSensitivity = 7000; // how sensitive the gyro is to movement to keep the device awake. higher number = less sensitive
+
 /* ===================== SETUP ===================== */
 
 void setup()
@@ -1979,6 +1990,8 @@ void loop()
 {
   readIMU();
 
+  handleIdle();
+
   static int consecutiveOpenDocks = 0;
 
   previousDockState = dockState;
@@ -1995,7 +2008,7 @@ void loop()
     display.display();
   }
 
-  if (consecutiveOpenDocks >= dockDebounce) {
+  if (consecutiveOpenDocks > 0) {
     dockOpen = false;
   } else {
     dockOpen = true;
@@ -2009,6 +2022,45 @@ void loop()
 
   runEffect(selectedEffect);
   FastLED.show();
+}
+
+void handleIdle() // check if cube hasn't moved. if it hasnt, increase idle timer. if it has, set to 0
+{
+  // Serial.println("idle timer + brightness modifier");
+  // Serial.println(idleTimer);
+  // Serial.println(brightnessModifier);
+  if (prevGX == round(((gx + ax) / idleSensitivity)) && prevGY == round(((gy + ay) / idleSensitivity)) && prevGZ == round(((gz + az) / idleSensitivity)) && onBattery == true) {
+    idleTimer++;
+
+    if (idleTimer >= timeout) {
+      idleTimer = timeout;
+      int prevMod = brightnessModifier;
+      brightnessModifier = constrain(brightnessModifier + 5, 0, brightness);
+
+      if (prevMod != brightnessModifier) {
+        FastLED.setBrightness(constrain(brightness - brightnessModifier, 0, 255));
+      }
+    } else if (brightnessModifier != 0) {
+      int prevMod = brightnessModifier;
+      brightnessModifier = constrain(brightnessModifier - 5, 0, brightness);
+
+      if (prevMod != brightnessModifier) {
+        FastLED.setBrightness(constrain(brightness - brightnessModifier, 0, 255));
+      }
+    }
+  } else {
+    idleTimer = 0;
+    int prevMod = brightnessModifier;
+    brightnessModifier = constrain(brightnessModifier - 5, 0, brightness);
+
+    if (prevMod != brightnessModifier) {
+      FastLED.setBrightness(constrain(brightness - brightnessModifier, 0, 255));
+    }
+  }
+
+  prevGX = round(((gx + ax) / idleSensitivity));
+  prevGY = round(((gy + ay) / idleSensitivity));
+  prevGZ = round(((gz + az) / idleSensitivity));
 }
 
 /* ===================== BUTTON HANDLING ===================== */
@@ -2156,8 +2208,9 @@ void handleOLED()
 
   display.println(currentEffectName);
 
-  bool onBattery = true;
   int width = 1;
+  
+  onBattery =  true;
 
   if (batteryVoltage >= 4.05) { // battery 85%+
     width = 10;
