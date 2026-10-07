@@ -6,6 +6,8 @@
 #include <string.h>
 #include <math.h>
 
+#include "sleep_animation.h"
+
 /* ===================== CONFIG ===================== */
 
 #define LED_TYPE WS2812B
@@ -61,9 +63,15 @@ bool previousDockState = false;
 
 #define MPU_ADDR 0x68
 #define PWR_MGMT_1 0x6B
+#define PWR_MGMT_2 0x6C
+#define INT_ENABLE 0x38
+#define MOT_THR 0x1F
+#define MOT_DUR 0x20
 #define ACCEL_XOUT_H 0x3B
 #define GYRO_XOUT_H 0x43
 #define WHO_AM_I 0x75
+
+#define MPU_INT 17
 
 // Raw accelerometer values
 int16_t ax = 0;
@@ -85,6 +93,7 @@ bool onBattery = true;
 
 const uint8_t dockDebounce = 10;
 bool dockOpen = true;
+bool previousDockOpen = true;
 
 /* ===================== LED ARRAYS ===================== */
 
@@ -1921,7 +1930,7 @@ unsigned int sample;
 double volts;
 
 int idleTimer = 0;
-int timeout = 500;
+int timeout = 500; // default 500
 int brightnessModifier = brightness;
 int idleSensitivity = 7000; // how sensitive the gyro is to movement to keep the device awake. higher number = less sensitive
 
@@ -1939,6 +1948,14 @@ void setup()
 
   // Dock detect
   pinMode(FACE6_DOCK_PIN, INPUT_PULLUP);
+
+  // clear leds as fast as we can
+  digitalWrite(FACE1_PIN, HIGH);
+  digitalWrite(FACE2_PIN, HIGH);
+  digitalWrite(FACE3_PIN, HIGH);
+  digitalWrite(FACE4_PIN, HIGH);
+  digitalWrite(FACE5_PIN, HIGH);
+  digitalWrite(FACE6_PIN, HIGH);
 
   // LEDs
   FastLED.addLeds<LED_TYPE, FACE1_PIN, COLOR_ORDER>(face1, LEDS_PER_FACE);
@@ -2014,14 +2031,74 @@ void loop()
     dockOpen = true;
   }
 
+  static int rippler = 0;
+
+  if (dockOpen == false && previousDockOpen == true) {
+    rippleEffect(CRGB::Black);
+    rippleEffect(CRGB::Green);
+    previousDockOpen = false;
+    rippler = 255;
+  }
+
   if (!previousDockState && !dockState) {
     consecutiveOpenDocks = constrain(consecutiveOpenDocks++, 0, dockDebounce);
   } else {
     consecutiveOpenDocks = constrain(consecutiveOpenDocks--, 0, dockDebounce);
   }
 
+  previousDockOpen = dockOpen;
+
   runEffect(selectedEffect);
+
+  if (rippler != 0) {
+    //fadeAll(rippler);
+    
+
+    for (int f = 0; f < 6; f++) {
+      for (int x = 0; x < 25; x++) {
+        CRGB original = faces[f][x];
+        CRGB edit = original - CRGB(rippler, 0, rippler);
+        edit += CRGB(0, rippler, 0);
+        faces[f][x] = edit;
+      }
+    }
+    rippler = constrain(rippler - 15, 0, 255);
+  }
+
   FastLED.show();
+}
+
+void sleepTime() // sleepy hehe
+{
+  writeRegister(0x1C, 0x01); // enable high pass filter set to 5hz. filter out gravity
+  writeRegister(MOT_THR, 0x02); // set motion threshold
+  writeRegister(MOT_DUR, 0x01); // set motion duration
+  writeRegister(0x37, 0x20); // config int pin
+  writeRegister(0x38, 0x40); // config int pin
+  writeRegister(PWR_MGMT_2, 0xC7); // configure cycle mode to 40Hz and disable gyro as it isnt needed
+  writeRegister(PWR_MGMT_1, 0x28); // enable cycle mode + disable temp sensor
+
+  // reduce power use
+  display.dim(true);
+
+  // go to sleepy weepy
+  gpio_wakeup_enable(GPIO_NUM_17, GPIO_INTR_HIGH_LEVEL);
+  esp_sleep_enable_gpio_wakeup();
+  esp_light_sleep_start();
+
+  readRegister(0x3A); // read int register to clear it
+  writeRegister(PWR_MGMT_1, 0x80); // clear all registers (probably clears 0x3A anyway but above line just to be safe)
+  idleTimer = 0;
+
+  display.dim(false);
+
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.setTextSize(2);
+  display.println("waking up");
+  display.setTextSize(1);
+  display.print("gimme a second");
+  display.display();
 }
 
 void handleIdle() // check if cube hasn't moved. if it hasnt, increase idle timer. if it has, set to 0
@@ -2029,16 +2106,101 @@ void handleIdle() // check if cube hasn't moved. if it hasnt, increase idle time
   // Serial.println("idle timer + brightness modifier");
   // Serial.println(idleTimer);
   // Serial.println(brightnessModifier);
-  if (prevGX == round(((gx + ax) / idleSensitivity)) && prevGY == round(((gy + ay) / idleSensitivity)) && prevGZ == round(((gz + az) / idleSensitivity)) && onBattery == true) {
+  if (prevGX == round(((gx + ax) / idleSensitivity)) && prevGY == round(((gy + ay) / idleSensitivity)) && prevGZ == round(((gz + az) / idleSensitivity))) { //  && onBattery == true
     idleTimer++;
 
     if (idleTimer >= timeout) {
-      idleTimer = timeout;
       int prevMod = brightnessModifier;
       brightnessModifier = constrain(brightnessModifier + 5, 0, brightness);
 
       if (prevMod != brightnessModifier) {
         FastLED.setBrightness(constrain(brightness - brightnessModifier, 0, 255));
+      } else if (idleTimer >= timeout * 3){ // been idle for 3 times the timeout time, go into proper sleep
+        clearCube();
+        FastLED.setBrightness(brightness);
+
+        display.clearDisplay();
+        display.setCursor(0,0);
+        display.setTextSize(2);
+        display.println("sleepy");
+        display.println("time!");
+        display.setTextSize(1);
+        display.print("shake to wake up");
+        display.display();
+
+        rippleEffect(CRGB::Blue);
+        rippleEffect(CRGB::Black);
+
+        while (brightnessModifier > 0) {
+          brightnessModifier = constrain(brightnessModifier - 5, 0, brightness);
+          displayFrame(0);
+          FastLED.setBrightness(constrain(brightness - brightnessModifier, 0, 255));
+          FastLED.show();
+          delay(40);
+        }
+        
+        uint16_t frame = 0;
+        uint32_t lastUpdate = 0;
+
+        while (frame < NUM_FRAMES) {
+          uint32_t now = millis();
+
+          if (now - lastUpdate >= FRAME_DURATION_MS) {
+              lastUpdate = now;
+
+              displayFrame(frame);
+
+              frame += 1;
+          }
+
+        }
+
+        delay(FRAME_DURATION_MS * 4);
+        
+        while (brightnessModifier < brightness) {
+          brightnessModifier = constrain(brightnessModifier + 5, 0, brightness);
+          FastLED.setBrightness(constrain(brightness - brightnessModifier, 0, 255));
+          FastLED.show();
+          delay(40);
+        }
+
+        FastLED.show();
+        sleepTime();
+        clearCube();
+        FastLED.setBrightness(brightness);
+        FastLED.show();
+
+        rippleEffect(CRGB::Blue);
+        rippleEffect(CRGB::Black);
+
+        while (brightnessModifier > 0) {
+          brightnessModifier = constrain(brightnessModifier - 5, 0, brightness);
+          displayFrame(NUM_FRAMES - 1);
+          FastLED.setBrightness(constrain(brightness - brightnessModifier, 0, 255));
+          FastLED.show();
+          delay(40);
+        }
+
+        frame = NUM_FRAMES - 1;
+
+        while (frame != 0) {
+          uint32_t now = millis();
+
+          if (now - lastUpdate >= FRAME_DURATION_MS) {
+              lastUpdate = now;
+
+              displayFrame(frame);
+
+              frame -= 1;
+          }
+        }
+
+        while (brightnessModifier < brightness) {
+          brightnessModifier = constrain(brightnessModifier + 5, 0, brightness);
+          FastLED.setBrightness(constrain(brightness - brightnessModifier, 0, 255));
+          FastLED.show();
+          delay(40);
+        }
       }
     } else if (brightnessModifier != 0) {
       int prevMod = brightnessModifier;
@@ -2411,6 +2573,35 @@ void runEffect(uint8_t effect)
   }
 }
 
+void rippleEffect(CRGB c)
+{
+  int anim_delay = 40;
+  face6[12] = c;
+  FastLED.show();
+  delay(anim_delay);
+  fillRect(1, 1, 3, 3, c, face6);
+  FastLED.show();
+  delay(anim_delay);
+  fillRect(0, 0, 5, 5, c, face6);
+  FastLED.show();
+  delay(anim_delay);
+  for (int y = 0; y < 5; y++) {
+    for (int face = 1; face < 5; face++) {
+      fillRect(0, y, 5, 1, c, faces[face]);
+    }
+    FastLED.show();
+    delay(anim_delay);
+  }
+  drawRect(0, 0, 5, 5, c, face1);
+  FastLED.show();
+  delay(anim_delay);
+  drawRect(1, 1, 3, 3, c, face1);
+  FastLED.show();
+  delay(anim_delay);
+  face1[12] = c;
+  FastLED.show();
+}
+
 void solidColor()
 {
   fillAll(CRGB::Blue);
@@ -2542,6 +2733,53 @@ void testCubeGeometry()
 }
 
 /* ===================== HELPERS ===================== */
+
+void displayFrame(uint16_t frame) {
+    for (int i = 0; i < 25; i++) {
+        CRGB pixel(
+            animation[frame][i][0],
+            animation[frame][i][1],
+            animation[frame][i][2]
+        );
+
+        face1[i] = pixel;
+        face2[i] = pixel;
+        face3[i] = pixel;
+        face4[i] = pixel;
+        face5[i] = pixel;
+        face6[i] = pixel;
+    }
+    FastLED.show();
+}
+
+void fillRect(int x, int y, int w, int h, CRGB color, CRGB* face) {
+  for (int dy = 0; dy < h; dy++) {
+    for (int dx = 0; dx < w; dx++) {
+      int px = x + dx;
+      int py = y + dy;
+
+      if (px >= 0 && px < 5 && py >= 0 && py < 5) {
+        face[py * 5 + px] = color;
+      }
+    }
+  }
+}
+
+void drawRect(int x, int y, int w, int h, CRGB color, CRGB* face) {
+  for (int dy = 0; dy < h; dy++) {
+    for (int dx = 0; dx < w; dx++) {
+      int px = x + dx;
+      int py = y + dy;
+
+      // Only draw the edges
+      if (dx == 0 || dx == w - 1 || dy == 0 || dy == h - 1) {
+        if (px >= 0 && px < 5 && py >= 0 && py < 5) {
+          face[py * 5 + px] = color;
+        }
+      }
+    }
+  }
+}
 
 template <typename F>
 void forEachFace(F func)
